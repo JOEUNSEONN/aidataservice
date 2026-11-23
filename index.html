@@ -179,6 +179,7 @@ footer{background:var(--navy);color:#b9c0ee;text-align:center;font-size:13px;pad
 
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <header><div class="wrap">
@@ -277,7 +278,11 @@ footer{background:var(--navy);color:#b9c0ee;text-align:center;font-size:13px;pad
 <div class="toast" id="toast" role="status"></div></div>
 <script>
 (function(){
-
+// ===== Supabase 설정: 프로젝트 URL과 anon(공개) 키를 넣으면 실제 DB로 동작해요. 비워 두면 데모 모드예요. =====
+const SUPABASE_URL='https://iufboyjhnfqzcaxxdsyv.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_-OvspVXcy3Ur12orFwvJ9Q_g18Nb8bj';
+// ================================================================================================
+let DB=null,dbMsg='',reports=[];const cool={};
 // [목적지, 주차장명, 총면수, 현재 주차 대수, 기본분, 기본요금, 단위분, 단위요금, 일 최대, 거리(m), 10분당 평균 유입(대)]
 const RAW=[
 ['서면','서면 롯데 공영주차장',120,104,30,1000,10,500,20000,150,2.6],
@@ -297,11 +302,12 @@ const RAW=[
 ['강남','역삼 공영주차장',140,98,30,1500,10,600,26000,520,1.9],
 ['강남','논현 민영주차장',60,60,30,1800,10,700,30000,700,1.2]
 ];
-const DESTS=['서면','해운대','부산역','홍대','강남'];
-const lots=RAW.map((a,i)=>({id:i,dest:a[0],name:a[1],cap:a[2],occ:a[3],occ0:a[3],bm:a[4],bf:a[5],um:a[6],uf:a[7],max:a[8],dist:a[9],rate:a[10]}));
+let DESTS=['서면','해운대','부산역','홍대','강남'];
+let lots=RAW.map((a,i)=>({id:i,dest:a[0],name:a[1],cap:a[2],occ:a[3],occ0:a[3],bm:a[4],bf:a[5],um:a[6],uf:a[7],max:a[8],dist:a[9],rate:a[10]}));
 const S={dest:'서면',q:'서면',hours:3,sort:'price',sel:null,alert:false,tab:0,warned:{}};
 const $=s=>document.querySelector(s), V=$('#v');
 
+const byId=id=>lots.find(l=>l.id===id);
 const fee=(l,m)=>Math.min(l.max,l.bf+Math.ceil(Math.max(0,m-l.bm)/l.um)*l.uf);
 const won=n=>n.toLocaleString('ko-KR')+'원';
 const rem=l=>l.cap-l.occ;
@@ -335,7 +341,7 @@ function renderSearch(){
   <label class="l">정렬 기준</label>
   <div class="sorts">${[['price','가격 낮은 순','💰'],['seats','잔여석 많은 순','🅿️'],['dist','거리 가까운 순','📍']].map(s=>`<button class="sort" aria-pressed="${S.sort===s[0]}" data-s="${s[0]}"><span aria-hidden="true">${s[2]}</span>${s[1]}</button>`).join('')}</div>
   <button class="cta" id="find">주차장 찾기</button>
-  <p class="note">데모용 시뮬레이션 데이터입니다. 실제 서비스에서는 공공데이터 API와 IoT 센서 값이 연결됩니다.</p>`;
+  <p class="note">${DB?'Supabase에 저장된 실시간 데이터예요.':'데모용 시뮬레이션 데이터예요.'+(dbMsg?' 연결 실패 사유: '+dbMsg:'')}</p>`;
   const q=$('#q');
   q.oninput=()=>{S.q=q.value;const m=DESTS.find(d=>q.value.includes(d));if(m){S.dest=m;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.d===m))}};
   document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.dest=c.dataset.d;S.q=S.dest;q.value=S.dest;$('#err').textContent='';document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c))});
@@ -364,21 +370,21 @@ function renderList(){
   <p class="sumline">${hm(S.hours)} 주차 기준 · ${sl}</p>
   <div class="mapw">${mapSVG(list)}</div>
   <div class="legend"><span style="--c:var(--ok)">여유</span><span style="--c:var(--mid)">보통</span><span style="--c:var(--bad)">혼잡·만차</span></div>
-  ${list.map(l=>{const lv=level(l),p=Math.round(pFull(l,10)*100),r=rem(l);
+  ${list.map(l=>{const rc=reportCnt(l),lv=level(l),p=Math.round(pFull(l,10)*100),r=rem(l);
    return `<button class="lot ${r<=0?'full':''}" data-id="${l.id}" aria-current="${S.sel===l.id}">
    <div class="row"><span class="nm">${l.name}</span><span>${l===top?'<span class="badge b-rec">추천</span> ':''}<span class="badge b-${lv.k}">${lv.t}</span></span></div>
    <div class="meta"><span>잔여 <b>${r}</b>/${l.cap}대</span><span>${l.dist}m</span></div>
    <div class="row" style="margin-top:6px"><span style="font-size:12.5px;color:var(--sub)">${hm(S.hours)} 예상 요금</span><span class="price">${won(fee(l,m))}</span></div>
    <div class="bar" style="--c:${lv.c}"><i style="width:${Math.round(l.occ/l.cap*100)}%"></i></div>
-   ${r>0&&p>=50?`<div class="warn">⚠ 10분 안에 만차 확률 ${p}%</div>`:''}</button>`}).join('')}`;
+   ${r>0&&p>=50?`<div class="warn">⚠ 10분 안에 만차 확률 ${p}%</div>`:''}${rc.f>0?`<div class="warn">📢 최근 30분 만차 제보 ${rc.f}건</div>`:''}</button>`}).join('')}`;
   document.querySelectorAll('.lot').forEach(b=>b.onclick=()=>{S.sel=+b.dataset.id;go(2)});
   document.querySelectorAll('.pin').forEach(p=>{const f=()=>{S.sel=+p.dataset.id;renderList();const el=document.querySelector('.lot[aria-current=true]');el&&el.scrollIntoView({block:'nearest',behavior:'smooth'})};p.onclick=f;p.onkeydown=e=>{if(e.key==='Enter')f()}});
 }
 
 function renderDetail(){
-  const l=lots[S.sel];
+  const l=byId(S.sel);
   if(!l){V.innerHTML=`<div class="empty">비교 화면에서 주차장을 선택하면<br>혼잡도 예측과 체류시간별 요금을 볼 수 있어요.<br><button class="cta" id="gb">주차장 고르러 가기</button></div>`;$('#gb').onclick=()=>go(S.dest&&S.tab!==1?1:0);return}
-  const lv=level(l),p10=Math.round(pFull(l,10)*100),p30=Math.round(pFull(l,30)*100);
+  const rc=reportCnt(l),lv=level(l),p10=Math.round(pFull(l,10)*100),p30=Math.round(pFull(l,30)*100);
   const pts=[0,10,20,30,40,50,60].map(t=>Math.min(100,Math.round((l.occ+l.rate*t/10)/l.cap*100)));
   const W=300,H=110,bw=28,gap=(W-bw*7)/6;
   const bars=pts.map((v,i)=>{const h=v/100*H,x=i*(bw+gap),c=v>=100?'var(--bad)':v>=90?'var(--bad)':v>=70?'var(--mid)':'var(--ok)';
@@ -393,20 +399,55 @@ function renderDetail(){
    <table style="margin-top:8px"><tr><th>체류시간</th><th>예상 요금</th></tr>
    ${hrs.map(h=>`<tr class="${h===S.hours?'me':''}"><td>${hm(h)}${h===S.hours?' (내 선택)':''}</td><td>${won(fee(l,h*60))}</td></tr>`).join('')}</table>
    <p class="hint" style="margin:8px 0 0">기본 ${l.bm}분 ${won(l.bf)} + ${l.um}분당 ${won(l.uf)} · 일 최대 ${won(l.max)}</p></div>
+  <div class="panel"><b style="font-size:14px">현장 제보</b>
+   <p class="hint" style="margin:4px 0 10px">최근 30분 · 만차 ${rc.f}건 · 자리 있음 ${rc.a}건${rc.f>=3&&rc.f>rc.a&&rem(l)>0?'<br><span style="color:var(--badt)">⚠ 만차 제보가 많아요. 도착 전 한 번 더 확인하세요.</span>':''}</p>
+   <div style="display:flex;gap:8px"><button class="cta sec" id="rf" style="margin:0">🚫 만차예요</button><button class="cta sec" id="ra" style="margin:0">✅ 자리 있어요</button></div></div>
   <div class="panel"><div class="toggle"><span>만차 위험 알림 받기</span><button class="sw" id="sw" role="switch" aria-checked="${S.alert}" aria-label="만차 위험 알림"></button></div></div>
   <button class="cta" id="nav">네비게이션 안내 시작</button>`;
   $('#sw').onclick=()=>{S.alert=!S.alert;S.warned={};$('#sw').setAttribute('aria-checked',S.alert);toast(S.alert?'만차 위험이 높아지면 알려드릴게요.':'알림을 껐어요.')};
+  $('#rf').onclick=()=>report(l,'full');$('#ra').onclick=()=>report(l,'available');
   $('#nav').onclick=()=>window.open('https://map.naver.com/p/search/'+encodeURIComponent(S.dest+' '+l.name),'_blank','noopener');
 }
 
+function reportCnt(l){const t=Date.now()-1800000;let f=0,a=0;reports.forEach(r=>{if(r.lot===l.id&&r.t>t){r.kind==='full'?f++:a++}});return{f,a}}
+async function report(l,kind){
+  const k='r'+l.id;if(Date.now()-(cool[k]||0)<300000){toast('같은 주차장은 5분에 한 번만 제보할 수 있어요.');return}
+  cool[k]=Date.now();
+  if(DB){const {data,error}=await DB.from('lot_reports').insert({lot_id:l.id,kind}).select().single();
+    if(error){cool[k]=0;toast('제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');return}
+    if(!reports.some(x=>x.id===data.id))reports.push({id:data.id,lot:l.id,kind,t:Date.parse(data.created_at)})}
+  else reports.push({id:'local'+Date.now(),lot:l.id,kind,t:Date.now()});
+  toast('제보 고마워요! 다른 운전자 화면에도 반영돼요.');renderDetail();
+}
+function refresh(all){if((all||(APP.classList.contains('on')&&S.tab>0))&&!document.activeElement.matches('.sw,#q,#h'))render()}
+async function initDB(){
+  if(!SUPABASE_URL||!SUPABASE_ANON_KEY){dbMsg='URL 또는 키가 비어 있어요. 예전에 받은 파일일 수 있어요.';refresh(true);tick();return}
+  try{
+    if(!window.supabase)throw new Error('Supabase 라이브러리를 불러오지 못했어요. 인터넷 연결이나 브라우저 차단을 확인해 주세요.');
+    const c=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    const {data,error}=await c.from('parking_lots').select('*').order('id');
+    if(error||!data||!data.length)throw error||new Error('parking_lots 테이블이 비어 있어요. SQL을 실행했는지 확인해 주세요.');
+    lots=data.map(r=>({id:r.id,dest:r.dest,name:r.name,cap:r.cap,occ:r.occ,occ0:r.occ,bm:r.base_min,bf:r.base_fee,um:r.unit_min,uf:r.unit_fee,max:r.day_max,dist:r.dist,rate:Number(r.rate)}));
+    DESTS=[...new Set(lots.map(l=>l.dest))];
+    if(!DESTS.includes(S.dest)){S.dest=DESTS[0];S.q=S.dest}
+    const since=new Date(Date.now()-1800000).toISOString();
+    const rr=await c.from('lot_reports').select('id,lot_id,kind,created_at').gte('created_at',since);
+    reports=(rr.data||[]).map(r=>({id:r.id,lot:r.lot_id,kind:r.kind,t:Date.parse(r.created_at)}));
+    c.channel('parking-live')
+     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'parking_lots'},p=>{const l=byId(p.new.id);if(l){l.occ=p.new.occ;l.rate=Number(p.new.rate);refresh()}})
+     .on('postgres_changes',{event:'INSERT',schema:'public',table:'lot_reports'},p=>{if(!reports.some(x=>x.id===p.new.id)){reports.push({id:p.new.id,lot:p.new.lot_id,kind:p.new.kind,t:Date.parse(p.new.created_at)});refresh()}})
+     .subscribe();
+    DB=c;S.sel=null;refresh(true);tick();
+  }catch(e){DB=null;console.error(e);dbMsg=(e&&e.message)||String(e);toast('Supabase 연결 실패: '+dbMsg);refresh(true);tick()}
+}
 let tt;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),3200)}
 
 // IoT 센서 입출차 데이터를 흉내 내는 시뮬레이션 (평균 점유율로 되돌아가는 무작위 변동)
 function tick(){
-  lots.forEach(l=>{const bias=(l.occ0-l.occ)/l.cap*6;l.occ=Math.max(0,Math.min(l.cap,l.occ+Math.round(bias+Math.random()*5-2.2)))});
-  $('#upd').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' 갱신';
+  if(!DB)lots.forEach(l=>{const bias=(l.occ0-l.occ)/l.cap*6;l.occ=Math.max(0,Math.min(l.cap,l.occ+Math.round(bias+Math.random()*5-2.2)))});
+  $('#upd').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+(DB?' · 실시간 연결':dbMsg?' · 데모(연결 실패)':' · 데모 데이터');
   if(APP.classList.contains('on')&&S.tab>0&&!document.activeElement.matches('.sw'))render();
-  if(S.alert&&S.sel!=null){const l=lots[S.sel],p=pFull(l,10);if(p>=.6&&!S.warned[l.id]){S.warned[l.id]=1;toast('⚠ '+l.name+' 10분 안에 만차 확률 '+Math.round(p*100)+'%')}if(p<.4)S.warned[l.id]=0}
+  if(S.alert&&S.sel!=null){const l=byId(S.sel),p=pFull(l,10);if(p>=.6&&!S.warned[l.id]){S.warned[l.id]=1;toast('⚠ '+l.name+' 10분 안에 만차 확률 '+Math.round(p*100)+'%')}if(p<.4)S.warned[l.id]=0}
 }
 [0,1,2].forEach(i=>$('#t'+i).onclick=()=>go(i));
 // 한 파일 안에서 소개 화면과 앱 화면 전환 (#app)
@@ -420,7 +461,7 @@ document.querySelectorAll('[data-dest]').forEach(a=>a.onclick=e=>{e.preventDefau
 const P=new URLSearchParams(location.search),pd=P.get('dest'),ph=parseFloat(P.get('hours'));
 if(ph>=.5&&ph<=12)S.hours=ph;
 if(DESTS.includes(pd)){S.dest=pd;S.q=pd;go(1);history.replaceState(null,'','#app')}else render();
-sync();tick();setInterval(tick,4000);
+sync();tick();setInterval(tick,4000);initDB();
 
 })();
 </script>
