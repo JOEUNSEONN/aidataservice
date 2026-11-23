@@ -179,7 +179,6 @@ footer{background:var(--navy);color:#b9c0ee;text-align:center;font-size:13px;pad
 
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <header><div class="wrap">
@@ -341,7 +340,7 @@ function renderSearch(){
   <label class="l">정렬 기준</label>
   <div class="sorts">${[['price','가격 낮은 순','💰'],['seats','잔여석 많은 순','🅿️'],['dist','거리 가까운 순','📍']].map(s=>`<button class="sort" aria-pressed="${S.sort===s[0]}" data-s="${s[0]}"><span aria-hidden="true">${s[2]}</span>${s[1]}</button>`).join('')}</div>
   <button class="cta" id="find">주차장 찾기</button>
-  <p class="note">${DB?'Supabase에 저장된 실시간 데이터예요.':'데모용 시뮬레이션 데이터예요.'+(dbMsg?' 연결 실패 사유: '+dbMsg:'')}</p>`;
+  <p class="note">${DB?'Supabase에 저장된 데이터예요. 4초마다 새로 불러와요.':'데모용 시뮬레이션 데이터예요.'+(dbMsg?' 연결 실패 사유: '+dbMsg:'')}</p>`;
   const q=$('#q');
   q.oninput=()=>{S.q=q.value;const m=DESTS.find(d=>q.value.includes(d));if(m){S.dest=m;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.d===m))}};
   document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.dest=c.dataset.d;S.q=S.dest;q.value=S.dest;$('#err').textContent='';document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c))});
@@ -413,31 +412,38 @@ function reportCnt(l){const t=Date.now()-1800000;let f=0,a=0;reports.forEach(r=>
 async function report(l,kind){
   const k='r'+l.id;if(Date.now()-(cool[k]||0)<300000){toast('같은 주차장은 5분에 한 번만 제보할 수 있어요.');return}
   cool[k]=Date.now();
-  if(DB){const {data,error}=await DB.from('lot_reports').insert({lot_id:l.id,kind}).select().single();
-    if(error){cool[k]=0;toast('제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');return}
-    if(!reports.some(x=>x.id===data.id))reports.push({id:data.id,lot:l.id,kind,t:Date.parse(data.created_at)})}
+  if(DB){try{const d=await api('lot_reports',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({lot_id:l.id,kind})});
+      const x=d[0];if(!reports.some(y=>y.id===x.id))reports.push({id:x.id,lot:l.id,kind,t:Date.parse(x.created_at)})}
+    catch(e){cool[k]=0;toast('제보를 보내지 못했어요: '+e.message);return}}
   else reports.push({id:'local'+Date.now(),lot:l.id,kind,t:Date.now()});
   toast('제보 고마워요! 다른 운전자 화면에도 반영돼요.');renderDetail();
 }
 function refresh(all){if((all||(APP.classList.contains('on')&&S.tab>0))&&!document.activeElement.matches('.sw,#q,#h'))render()}
+const REST=SUPABASE_URL+'/rest/v1/';
+async function api(path,opt){
+  let r;try{r=await fetch(REST+path,Object.assign({},opt,{headers:Object.assign({apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},opt&&opt.headers)}))}
+  catch(e){throw new Error('Supabase에 접속하지 못했어요. 인터넷 연결과 프로젝트 주소를 확인해 주세요. ('+e.message+')')}
+  if(!r.ok){let m='';try{m=(await r.json()).message||''}catch(e){}throw new Error('HTTP '+r.status+(m?' - '+m:''))}
+  return r.status===204?null:r.json();
+}
+const mapLot=r=>({id:r.id,dest:r.dest,name:r.name,cap:r.cap,occ:r.occ,occ0:r.occ,bm:r.base_min,bf:r.base_fee,um:r.unit_min,uf:r.unit_fee,max:r.day_max,dist:r.dist,rate:Number(r.rate)});
+async function loadReports(){
+  const since=encodeURIComponent(new Date(Date.now()-1800000).toISOString());
+  const rr=await api('lot_reports?select=id,lot_id,kind,created_at&created_at=gte.'+since);
+  reports=rr.map(r=>({id:r.id,lot:r.lot_id,kind:r.kind,t:Date.parse(r.created_at)}));
+}
+// 4초마다 DB의 최신 잔여석·제보를 가져와 화면을 갱신
+async function poll(){try{const d=await api('parking_lots?select=id,occ,rate');d.forEach(r=>{const l=byId(r.id);if(l){l.occ=r.occ;l.rate=Number(r.rate)}});await loadReports();refresh()}catch(e){}}
 async function initDB(){
   if(!SUPABASE_URL||!SUPABASE_ANON_KEY){dbMsg='URL 또는 키가 비어 있어요. 예전에 받은 파일일 수 있어요.';refresh(true);tick();return}
   try{
-    if(!window.supabase)throw new Error('Supabase 라이브러리를 불러오지 못했어요. 인터넷 연결이나 브라우저 차단을 확인해 주세요.');
-    const c=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const {data,error}=await c.from('parking_lots').select('*').order('id');
-    if(error||!data||!data.length)throw error||new Error('parking_lots 테이블이 비어 있어요. SQL을 실행했는지 확인해 주세요.');
-    lots=data.map(r=>({id:r.id,dest:r.dest,name:r.name,cap:r.cap,occ:r.occ,occ0:r.occ,bm:r.base_min,bf:r.base_fee,um:r.unit_min,uf:r.unit_fee,max:r.day_max,dist:r.dist,rate:Number(r.rate)}));
+    const data=await api('parking_lots?select=*&order=id');
+    if(!data.length)throw new Error('parking_lots 테이블이 비어 있어요. SQL을 실행했는지 확인해 주세요.');
+    lots=data.map(mapLot);
     DESTS=[...new Set(lots.map(l=>l.dest))];
     if(!DESTS.includes(S.dest)){S.dest=DESTS[0];S.q=S.dest}
-    const since=new Date(Date.now()-1800000).toISOString();
-    const rr=await c.from('lot_reports').select('id,lot_id,kind,created_at').gte('created_at',since);
-    reports=(rr.data||[]).map(r=>({id:r.id,lot:r.lot_id,kind:r.kind,t:Date.parse(r.created_at)}));
-    c.channel('parking-live')
-     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'parking_lots'},p=>{const l=byId(p.new.id);if(l){l.occ=p.new.occ;l.rate=Number(p.new.rate);refresh()}})
-     .on('postgres_changes',{event:'INSERT',schema:'public',table:'lot_reports'},p=>{if(!reports.some(x=>x.id===p.new.id)){reports.push({id:p.new.id,lot:p.new.lot_id,kind:p.new.kind,t:Date.parse(p.new.created_at)});refresh()}})
-     .subscribe();
-    DB=c;S.sel=null;refresh(true);tick();
+    await loadReports();
+    DB=true;S.sel=null;refresh(true);tick();setInterval(poll,4000);
   }catch(e){DB=null;console.error(e);dbMsg=(e&&e.message)||String(e);toast('Supabase 연결 실패: '+dbMsg);refresh(true);tick()}
 }
 let tt;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),3200)}
