@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>주차 미리보기 | AI 실시간 주차 잔여석 · 체류시간 맞춤 요금 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#3a5af9;--blue-d:#2a43c9;--navy:#1d2656;--ink:#1c2147;--sub:#5a6088;--bg:#f3f5ff;--tint:#e3e8ff;--lav:#ece8fb;--pink:#fbe8f0;--line:#d8ddf5;--ok:#2e9d5b;--bad:#d6402f}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{font-family:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;color:var(--ink);background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--navy);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-weight:900;font-size:18px;letter-spacing:-.03em;color:var(--blue)}
+nav{display:flex;gap:22px;font-size:14px;font-weight:500;color:var(--sub)}
+nav a:hover{color:var(--blue)}
+.btn{display:inline-block;padding:14px 26px;border-radius:14px;font-weight:700;font-size:15px;background:#fff;color:var(--blue-d);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.fill{background:var(--blue);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5)}
+.hero{background:var(--blue);color:#fff;border-radius:0 0 44px 44px;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding-top:64px;padding-bottom:0}
+.tag{display:inline-block;font-size:12.5px;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.2);margin:0 6px 14px 0}
+h1{font-size:clamp(30px,5vw,50px);font-weight:900;letter-spacing:-.04em;line-height:1.22}
+.hero p.lead{margin:18px 0 28px;font-size:17px;color:#dfe5ff;max-width:30em}
+.hero .btns{display:flex;gap:10px;flex-wrap:wrap;padding-bottom:64px}
+.phonew{align-self:end;display:flex;justify-content:center}
+.phone{width:285px;background:#f3f5ff;border-radius:34px 34px 0 0;padding:14px 14px 0;color:var(--ink);box-shadow:0 -6px 40px rgba(10,20,90,.35);height:430px;overflow:hidden}
+.pn{width:90px;height:22px;background:#111;border-radius:99px;margin:0 auto 12px}
+.ph{font-size:13px;color:var(--sub)}
+.pt{font-size:17px;font-weight:900;letter-spacing:-.03em;margin:2px 0 10px}
+.mini{background:#fff;border-radius:14px;padding:11px 12px;margin-bottom:9px;box-shadow:0 1px 5px rgba(50,60,150,.12)}
+.mini .r{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.mini b{font-size:14px}
+.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
+.p-ok{background:#dff4e7;color:#1f7a44}.p-bad{background:#fbdcd8;color:#b32d1d}.p-rec{background:var(--blue);color:#fff}
+.price{font-weight:900;color:var(--blue-d);font-size:16px}
+.warn{font-size:12px;color:#b32d1d;margin-top:4px}
+section{padding:84px 0 0}
+.sh{margin-bottom:30px}
+.sh small{font-size:13px;color:var(--blue);font-weight:700}
+.sh h2{font-size:clamp(25px,3.6vw,34px);font-weight:900;letter-spacing:-.04em;line-height:1.3;margin-top:4px}
+.sh p{color:var(--sub);margin-top:8px;max-width:36em}
+.cmp{display:grid;gap:12px}
+.cmprow{display:grid;grid-template-columns:1fr 38px 1fr;align-items:stretch;gap:8px}
+.cell{padding:18px 20px;border-radius:18px;font-size:15px;display:flex;align-items:center;gap:12px}
+.asis{background:#eceef6;color:#464b6b}
+.tobe{background:var(--tint);color:var(--navy);font-weight:500}
+.arr{display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:22px;font-weight:900}
+.colh{display:grid;grid-template-columns:1fr 38px 1fr;gap:8px;margin-bottom:10px;font-weight:900;font-size:15px}
+.colh span:first-child{color:var(--sub)}.colh span:last-child{color:var(--blue-d)}
+.ico{width:40px;height:40px;border-radius:12px;background:#fff;display:grid;place-items:center;font-size:20px;flex:none}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{border-radius:22px;padding:26px 24px 28px;min-height:230px}
+.card .ico{width:54px;height:54px;font-size:28px;border-radius:16px;margin-bottom:34px}
+.card h3{font-size:20px;font-weight:900;letter-spacing:-.03em;line-height:1.3;margin-bottom:8px}
+.card p{font-size:14.5px;opacity:.85}
+.c1{background:var(--navy);color:#fff}.c2{background:var(--blue);color:#fff}.c3{background:#8a96fb;color:#fff}
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;position:relative}
+.step{border-radius:22px;padding:24px;background:var(--tint)}
+.step:nth-child(2){background:var(--lav)}.step:nth-child(3){background:var(--pink)}
+.step .n{font-size:13px;font-weight:700;color:var(--sub)}
+.step h3{font-size:19px;font-weight:900;letter-spacing:-.03em;margin:4px 0 6px}
+.step p{font-size:14.5px;color:#454b73}
+.step .src{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.step .src span{font-size:12px;background:#fff;border-radius:99px;padding:3px 10px;color:var(--navy)}
+.eff{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.effc{background:var(--bg);border-radius:22px;padding:28px;display:flex;gap:18px;align-items:center}
+.effc .ico{width:64px;height:64px;font-size:32px;background:#fff;border-radius:20px}
+.effc h3{font-size:18px;font-weight:900;letter-spacing:-.03em;line-height:1.4}
+.tl{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ph3{border:2px solid var(--line);border-radius:22px;padding:24px}
+.ph3 .b{display:inline-block;background:var(--blue);color:#fff;font-size:12.5px;font-weight:700;padding:3px 11px;border-radius:99px}
+.ph3 h3{font-size:19px;font-weight:900;margin:12px 0 10px;letter-spacing:-.03em}
+.ph3 ul{list-style:none;padding:0;font-size:14.5px;color:#454b73}
+.ph3 li{padding:7px 0;border-top:1px solid var(--line);display:flex;gap:10px}
+.ph3 li em{font-style:normal;color:var(--sub);min-width:42px}
+.cta{margin-top:84px;background:var(--blue);color:#fff;border-radius:34px 34px 0 0;padding:64px 0;text-align:center}
+.cta h2{font-size:clamp(25px,4vw,36px);font-weight:900;letter-spacing:-.04em;line-height:1.3}
+.cta p{color:#dfe5ff;margin:12px 0 26px}
+.cta .qp{margin:30px 0 10px;font-size:13px}
+.qd{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.qd a{padding:8px 16px;border-radius:99px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);font-size:14px;font-weight:500}
+.qd a:hover{background:rgba(255,255,255,.3)}
+footer{background:var(--navy);color:#b9c0ee;text-align:center;font-size:13px;padding:26px 22px}
+@media(max-width:820px){
+ nav{display:none}
+ .hero .wrap{grid-template-columns:1fr;padding-top:44px}
+ .hero .btns{padding-bottom:30px}
+ .cards,.flow,.tl,.eff{grid-template-columns:1fr}
+ .cmprow,.colh{grid-template-columns:1fr}
+ .arr{transform:rotate(90deg);height:22px}.colh{display:none}
+ .card{min-height:0}.card .ico{margin-bottom:20px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* ---- 앱 화면 ---- */
+#app{--ink:#1b1f3b;--sub:#5d6283;--brand:#4a55d6;--brand-d:#343eb0;--bg:#e6e9fb;--card:#fff;--line:#d9dcf3;
+--ok:#2e9d5b;--mid:#e0a100;--bad:#d6402f;--midt:#8a6300;--badt:#b32d1d;--okt:#1f7a44}
+#app{position:fixed;inset:0;z-index:50;display:none;overflow:auto;font-family:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;color:var(--ink);background:#cfd3f3;justify-content:center;align-items:center;padding:12px}
+#app.on{display:flex}
+#app button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+#app :focus-visible{outline:3px solid #1b1f3b;outline-offset:2px}
+#app .phone{width:100%;max-width:400px;height:min(840px,100%);background:var(--brand);border-radius:34px;padding:14px 12px 12px;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(40,50,140,.35)}
+#app .top{display:flex;justify-content:space-between;align-items:center;color:#fff;padding:2px 8px 10px}
+#app .top b{font-size:15px;font-weight:900;letter-spacing:-.02em}
+#app .back{color:#fff;font-size:12px;font-weight:700;text-decoration:none;padding:5px 10px;border-radius:99px;background:rgba(255,255,255,.18)}
+#app .back:hover{background:rgba(255,255,255,.3)}
+#app .live{font-size:11px;display:flex;align-items:center;gap:6px;opacity:.95}
+#app .live i{width:8px;height:8px;border-radius:50%;background:#7dffb0;animation:p 1.6s infinite}
+@keyframes p{50%{opacity:.25}}
+#app .tabs{display:flex;gap:4px}
+#app .tab{flex:1;padding:10px 0;border-radius:14px 14px 0 0;background:#8b94ec;color:#fff;font-size:13px;font-weight:700}
+#app .tab[aria-selected=true]{background:var(--bg);color:var(--brand-d)}
+#app main{flex:1;min-height:0;background:var(--bg);border-radius:0 0 22px 22px;overflow-y:auto;padding:18px 16px 20px}
+#app h2{font-size:19px;font-weight:900;letter-spacing:-.03em;margin-bottom:4px}
+#app .hint{font-size:12.5px;color:var(--sub);margin-bottom:14px;line-height:1.5}
+#app label.l{display:block;font-size:13px;font-weight:700;margin:16px 0 8px}
+#app .inp{width:100%;padding:13px 14px;border:2px solid var(--brand);border-radius:12px;font:inherit;font-size:15px;background:#fff;color:var(--ink)}
+#app .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#app .chip{padding:6px 12px;border-radius:99px;background:#fff;border:1px solid var(--line);font-size:13px}
+#app .chip[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand)}
+#app .stay{display:flex;justify-content:space-between;align-items:baseline}
+#app .stay output{font-size:22px;font-weight:900;color:var(--brand-d)}
+#app input[type=range]{width:100%;accent-color:var(--brand);height:28px}
+#app .scale{display:flex;justify-content:space-between;font-size:11px;color:var(--sub)}
+#app .sorts{display:grid;gap:8px}
+#app .sort{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;background:#fff;border:2px solid var(--line);font-size:14px;font-weight:500;text-align:left}
+#app .sort[aria-pressed=true]{border-color:var(--brand);background:#f1f2ff;font-weight:700}
+#app .cta{width:100%;margin-top:20px;padding:15px;border-radius:14px;background:var(--brand);color:#fff;font-weight:700;font-size:15px}
+#app .cta:hover{background:var(--brand-d)}
+#app .cta.sec{background:#fff;color:var(--brand-d);border:2px solid var(--brand);margin-top:10px}
+#app .cta.off{background:#c9cce6;color:#fff}
+#app .err{color:var(--badt);font-size:13px;margin-top:8px;min-height:18px}
+#app .mapw{background:#faf6e8;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+#app .legend{display:flex;gap:12px;font-size:11.5px;margin:8px 2px 12px;color:var(--sub)}
+#app .legend span:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;background:var(--c)}
+#app .sumline{font-size:12.5px;color:var(--sub);margin:0 2px 10px}
+#app .lot{display:block;width:100%;text-align:left;background:var(--card);border:2px solid transparent;border-radius:14px;padding:13px 14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(50,60,150,.12)}
+#app .lot[aria-current=true]{border-color:var(--brand)}
+#app .lot.full{opacity:.62}
+#app .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#app .nm{font-weight:700;font-size:15px}
+#app .badge{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap}
+#app .b-ok{background:#dff4e7;color:var(--okt)}
+#app .b-mid{background:#fcefc7;color:var(--midt)}
+#app .b-bad{background:#fbdcd8;color:var(--badt)}
+#app .b-rec{background:var(--brand);color:#fff}
+#app .meta{display:flex;gap:14px;margin-top:8px;font-size:13px;color:var(--sub)}
+#app .meta b{color:var(--ink)}
+#app .price{font-size:18px;font-weight:900;color:var(--brand-d)}
+#app .warn{margin-top:8px;font-size:12.5px;color:var(--badt);font-weight:500}
+#app .bar{height:6px;border-radius:9px;background:#e8eaf8;margin-top:10px;overflow:hidden}
+#app .bar i{display:block;height:100%;background:var(--c)}
+#app .panel{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(50,60,150,.12)}
+#app .big{font-size:17px;font-weight:900;text-align:center;margin:6px 0 2px}
+#app table{width:100%;border-collapse:collapse;font-size:13.5px}
+#app th{background:var(--brand);color:#fff;padding:8px;font-weight:700;font-size:12.5px}
+#app td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:center}
+#app tr.me td{background:#eef0ff;font-weight:700}
+#app .toggle{display:flex;justify-content:space-between;align-items:center;padding:4px 2px;font-size:14px;font-weight:700}
+#app .sw{width:46px;height:26px;border-radius:99px;background:#c9cce6;position:relative;transition:background .2s}
+#app .sw:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+#app [aria-checked=true].sw{background:var(--brand)}
+#app [aria-checked=true].sw:after{transform:translateX(20px)}
+#app .empty{text-align:center;color:var(--sub);padding:50px 10px;font-size:14px;line-height:1.7}
+#app .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#1b1f3b;color:#fff;padding:12px 18px;border-radius:12px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;z-index:9}
+#app .toast.on{opacity:1;transform:translateX(-50%)}
+#app .note{font-size:11.5px;color:var(--sub);text-align:center;margin-top:14px}
+@media(max-width:460px){#app{padding:0}
+#app .phone{border-radius:0;height:100%;max-width:none}}
+@media(prefers-reduced-motion:reduce){#app *{animation:none!important;transition:none!important}}
+
+
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="logo" href="#top">주차 미리보기</a>
+  <nav><a href="#problem">문제 정의</a><a href="#features">핵심 기능</a><a href="#system">서비스 구성</a><a href="#effect">기대효과</a><a href="#plan">검증 계획</a></nav>
+  <a class="btn fill" style="padding:9px 18px;font-size:14px" href="#app">체험하기</a>
+</div></header>
+
+<div class="hero" id="top"><div class="wrap">
+  <div>
+    <span class="tag">AI 기반</span><span class="tag">2030 드라이버</span>
+    <h1>도착하기 전에<br>자리와 총요금부터<br>확인하세요</h1>
+    <p class="lead">실시간 주차 잔여석 예측과 체류시간 맞춤 요금을 한 화면에서 비교해, 주차장을 찾아 헛도는 시간을 줄여드려요.</p>
+    <div class="btns"><a class="btn" href="#app">주차장 찾아보기</a><a class="btn ghost" href="#problem">서비스 알아보기</a></div>
+  </div>
+  <div class="phonew" aria-hidden="true"><div class="phone">
+    <div class="pn"></div>
+    <div class="ph">서면 · 3시간 주차</div>
+    <div class="pt">지금 가면 어디가 좋을까요?</div>
+    <div class="mini"><div class="r"><b>서면 전포 주차장</b><span><span class="pill p-rec">추천</span> <span class="pill p-ok">여유</span></span></div>
+      <div class="r" style="margin-top:7px"><span>잔여 <b id="n1">22</b>대</span><span class="price">5,000원</span></div></div>
+    <div class="mini"><div class="r"><b>부전 지하주차장</b><span class="pill p-ok">보통</span></div>
+      <div class="r" style="margin-top:7px"><span>잔여 <b id="n2">69</b>대</span><span class="price">8,400원</span></div></div>
+    <div class="mini"><div class="r"><b>서면 롯데 공영</b><span class="pill p-bad">혼잡</span></div>
+      <div class="r" style="margin-top:7px"><span>잔여 <b id="n3">16</b>대</span><span class="price">8,500원</span></div>
+      <div class="warn">⚠ 10분 안에 만차 확률 80%</div></div>
+  </div></div>
+</div></div>
+
+<section id="problem"><div class="wrap">
+  <div class="sh"><small>기획 배경 및 문제 정의</small><h2>도착해서야 만차를 알게 되는<br>헛도는 시간, 이제 줄여요</h2><p>기존 방식의 한계와 이번에 새로 정의한 개선안의 차이점이에요.</p></div>
+  <div class="colh"><span>기존 대안의 한계</span><span></span><span>개선된 MVP 서비스</span></div>
+  <div class="cmp">
+    <div class="cmprow"><div class="cell asis"><span class="ico">⏱</span>단순 위치 안내 위주라 도착 후 만차 상황을 알게 되어 헛도는 시간 발생</div><div class="arr">→</div><div class="cell tobe"><span class="ico">😟</span>실시간 잔여석 미확인 및 체류시간별 요금 비교 불가로 인한 이동 불안감을 해소</div></div>
+    <div class="cmprow"><div class="cell asis"><span class="ico">🅿️</span>주차장 위치 및 기본 요금표만 표시</div><div class="arr">→</div><div class="cell tobe"><span class="ico">📱</span>실시간 잔여석 예측 + 체류시간 기준 맞춤 총요금을 한 화면에서 통합 추천</div></div>
+    <div class="cmprow"><div class="cell asis"><span class="ico">🗂</span>주차장 위치와 운영시간 등 정적 데이터</div><div class="arr">→</div><div class="cell tobe"><span class="ico">🔌</span>공공데이터 API, IoT 센서 입출차 데이터, 사용자 제보 데이터</div></div>
+    <div class="cmprow"><div class="cell asis"><span class="ico">✔️</span>도착 후 만차 확인 시 개별 앱 재탐색</div><div class="arr">→</div><div class="cell tobe"><span class="ico">🚗</span>출발 전 확실한 주차 계획 확정 및 낭비 시간 차단</div></div>
+  </div>
+</div></section>
+
+<section id="features"><div class="wrap">
+  <div class="sh"><small>MVP 핵심 기능 3가지</small><h2>목적지와 머무는 시간만 알려주세요</h2><p>자리가 있는지, 실제로 얼마를 내는지, 곧 만차가 될지까지 한 번에 알려드려요.</p></div>
+  <div class="cards">
+    <div class="card c1"><div class="ico">📍</div><h3>목적지 &amp; 체류시간 설정</h3><p>사용자의 예상 방문 시간을 기반으로 맞춤 검색을 해요.</p></div>
+    <div class="card c2"><div class="ico">⚖️</div><h3>실시간 잔여석 &amp; 요금 통합 비교</h3><p>잔여석 유무와 실제 지불 예상 금액을 동시에 비교해요.</p></div>
+    <div class="card c3"><div class="ico">💡</div><h3>혼잡도 예측 및 안내</h3><p>AI가 잔여석 확률을 분석하고 내비게이션과 연동해 안내해요.</p></div>
+  </div>
+</div></section>
+
+<section id="system"><div class="wrap">
+  <div class="sh"><small>서비스 시스템 구성도</small><h2>데이터가 모여 추천이 되기까지</h2></div>
+  <div class="flow">
+    <div class="step"><div class="n">1단계</div><h3>데이터 수집</h3><p>여러 출처의 주차 데이터를 실시간으로 모아요.</p><div class="src"><span>공공데이터 API</span><span>IoT 센서</span><span>사용자 제보</span></div></div>
+    <div class="step"><div class="n">2단계</div><h3>AI 분석 엔진</h3><p>실시간 잔여석 확률과 체류시간별 요금을 계산해요.</p></div>
+    <div class="step"><div class="n">3단계</div><h3>사용자 App UX</h3><p>맞춤 주차장을 추천하고, 만차 위험이 생기면 알려줘요.</p></div>
+  </div>
+</div></section>
+
+<section id="effect"><div class="wrap">
+  <div class="sh"><small>사용자 측면 기대효과</small><h2>출발하기 전에 끝내는 주차</h2></div>
+  <div class="eff">
+    <div class="effc"><div class="ico">🚦</div><h3>출발 전 주차장 확정으로<br>목적지 주변 헛도는 시간 차단</h3></div>
+    <div class="effc"><div class="ico">⛽</div><h3>불필요한 연료 소모 차단</h3></div>
+  </div>
+</div></section>
+
+<section id="plan"><div class="wrap">
+  <div class="sh"><small>사업화 검증 계획</small><h2>세 단계로 검증해 나가요</h2></div>
+  <div class="tl">
+    <div class="ph3"><span class="b">1단계</span><h3>수요 검증</h3><ul><li><em>대상</em>2030 운전자</li><li><em>내용</em>만차 경험 및 유료 서비스 지불 의사 설문/인터뷰</li></ul></div>
+    <div class="ph3"><span class="b">2단계</span><h3>MVP 구축</h3><ul><li><em>범위</em>핵심 유동인구 구역 20곳</li><li><em>내용</em>공공 API 연계 테스트 및 실시간 데이터 수집 테스트</li></ul></div>
+    <div class="ph3"><span class="b">3단계</span><h3>반응 확인</h3><ul><li><em>규모</em>시범 사용자 100명 대상</li><li><em>지표</em>재방문율(30% 목표) 및 주차 계획 도움 만족도 측정</li></ul></div>
+  </div>
+</div></section>
+
+<div class="cta"><div class="wrap">
+  <h2>주차 걱정 없이 출발해 볼까요?</h2>
+  <p>목적지와 체류시간을 입력하면 바로 비교해 드려요.</p>
+  <a class="btn" href="#app">MVP 체험하기</a>
+  <p class="qp">바로 가보기</p>
+  <div class="qd">
+    <a href="#app" data-dest="서면">서면</a><a href="#app" data-dest="해운대">해운대</a><a href="#app" data-dest="부산역">부산역</a><a href="#app" data-dest="홍대">홍대</a><a href="#app" data-dest="강남">강남</a>
+  </div>
+</div></div>
+<footer>AI데이터기반서비스기획 MVP 기획서 · 미디어콘텐츠학과 조은선</footer>
+
+<div id="app" role="dialog" aria-label="주차 미리보기 앱" aria-modal="true"><div class="phone">
+  <div class="top"><a class="back" href="#top" aria-label="소개 페이지로 돌아가기">← 소개</a><b>주차 미리보기</b><span class="live"><i></i><span id="upd">실시간 연결 중</span></span></div>
+  <div class="tabs" role="tablist" aria-label="화면 전환">
+    <button class="tab" role="tab" id="t0" aria-selected="true">검색</button>
+    <button class="tab" role="tab" id="t1" aria-selected="false">비교</button>
+    <button class="tab" role="tab" id="t2" aria-selected="false">상세</button>
+  </div>
+  <main id="v" aria-live="polite"></main>
+</div>
+<div class="toast" id="toast" role="status"></div></div>
+<script>
+(function(){
+
+// [목적지, 주차장명, 총면수, 현재 주차 대수, 기본분, 기본요금, 단위분, 단위요금, 일 최대, 거리(m), 10분당 평균 유입(대)]
+const RAW=[
+['서면','서면 롯데 공영주차장',120,104,30,1000,10,500,20000,150,2.6],
+['서면','부전 지하 공영주차장',200,131,30,1200,10,600,24000,420,1.8],
+['서면','서면역 환승주차장',80,80,60,2000,10,400,15000,610,1.0],
+['서면','전포 민영주차장',45,22,30,800,10,300,12000,780,0.6],
+['해운대','해운대 해수욕장 공영',300,286,30,1500,10,700,30000,200,4.2],
+['해운대','센텀 지하주차장',250,140,30,1000,10,500,22000,900,1.5],
+['해운대','달맞이길 민영주차장',60,31,30,1000,10,400,14000,1100,0.7],
+['부산역','부산역 공영주차장',180,152,30,1000,10,400,18000,120,2.2],
+['부산역','초량 민영주차장',70,64,30,900,10,300,13000,340,1.4],
+['부산역','북항 임시주차장',150,48,60,1500,10,300,12000,800,0.9],
+['홍대','홍대 공영주차장',100,96,30,1500,10,600,28000,140,3.2],
+['홍대','와우산로 민영주차장',50,36,30,1200,10,500,20000,380,1.3],
+['홍대','합정 환승주차장',130,70,30,1000,10,400,18000,900,1.1],
+['강남','강남역 지하주차장',220,201,30,2000,10,800,38000,160,3.6],
+['강남','역삼 공영주차장',140,98,30,1500,10,600,26000,520,1.9],
+['강남','논현 민영주차장',60,60,30,1800,10,700,30000,700,1.2]
+];
+const DESTS=['서면','해운대','부산역','홍대','강남'];
+const lots=RAW.map((a,i)=>({id:i,dest:a[0],name:a[1],cap:a[2],occ:a[3],occ0:a[3],bm:a[4],bf:a[5],um:a[6],uf:a[7],max:a[8],dist:a[9],rate:a[10]}));
+const S={dest:'서면',q:'서면',hours:3,sort:'price',sel:null,alert:false,tab:0,warned:{}};
+const $=s=>document.querySelector(s), V=$('#v');
+
+const fee=(l,m)=>Math.min(l.max,l.bf+Math.ceil(Math.max(0,m-l.bm)/l.um)*l.uf);
+const won=n=>n.toLocaleString('ko-KR')+'원';
+const rem=l=>l.cap-l.occ;
+const hm=h=>{const H=Math.floor(h),m=(h-H)*60;return (H?H+'시간':'')+(m?(H?' ':'')+m+'분':'')};
+function erf(x){const t=1/(1+.3275911*Math.abs(x));const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x);return x>=0?y:-y}
+const cdf=z=>.5*(1+erf(z/Math.SQRT2));
+// 향후 min분 내 만차 확률(잔여석 vs 예상 유입량의 정규 근사)
+function pFull(l,min){const r=rem(l);if(r<=0)return 1;const mu=l.rate*min/10,sd=1.8*Math.sqrt(min/10)+.5;return 1-cdf((r-mu)/sd)}
+function level(l){const r=l.occ/l.cap;if(rem(l)<=0)return{k:'bad',t:'만차',c:'var(--bad)'};if(r<.7)return{k:'ok',t:'여유',c:'var(--ok)'};if(r<.9)return{k:'mid',t:'보통',c:'var(--mid)'};return{k:'bad',t:'혼잡',c:'var(--bad)'}}
+function ranked(){
+  const m=S.hours*60,a=lots.filter(l=>l.dest===S.dest);
+  const key={price:l=>fee(l,m),seats:l=>-rem(l),dist:l=>l.dist}[S.sort];
+  const open=a.filter(l=>rem(l)>0).sort((x,y)=>key(x)-key(y)),full=a.filter(l=>rem(l)<=0);
+  return open.concat(full);
+}
+function go(n){
+  S.tab=n;[0,1,2].forEach(i=>{const t=$('#t'+i);t.setAttribute('aria-selected',i===n)});render();V.scrollTop=0;
+}
+function render(){[renderSearch,renderList,renderDetail][S.tab]()}
+
+function renderSearch(){
+  V.innerHTML=`<h2>어디로 가세요?</h2><p class="hint">목적지와 머무를 시간을 알려주면, 도착하기 전에 자리와 총요금을 함께 비교해드려요.</p>
+  <label class="l" for="q">목적지</label>
+  <input id="q" class="inp" type="search" placeholder="예: 서면, 해운대" value="${S.q}" autocomplete="off">
+  <div class="chips">${DESTS.map(d=>`<button class="chip" aria-pressed="${d===S.dest}" data-d="${d}">${d}</button>`).join('')}</div>
+  <div class="err" id="err"></div>
+  <label class="l" for="h">체류 예정 시간</label>
+  <div class="stay"><span class="hint" style="margin:0">슬라이더로 조절</span><output id="ho">${hm(S.hours)}</output></div>
+  <input id="h" type="range" min="0.5" max="12" step="0.5" value="${S.hours}">
+  <div class="scale"><span>30분</span><span>6시간</span><span>12시간</span></div>
+  <label class="l">정렬 기준</label>
+  <div class="sorts">${[['price','가격 낮은 순','💰'],['seats','잔여석 많은 순','🅿️'],['dist','거리 가까운 순','📍']].map(s=>`<button class="sort" aria-pressed="${S.sort===s[0]}" data-s="${s[0]}"><span aria-hidden="true">${s[2]}</span>${s[1]}</button>`).join('')}</div>
+  <button class="cta" id="find">주차장 찾기</button>
+  <p class="note">데모용 시뮬레이션 데이터입니다. 실제 서비스에서는 공공데이터 API와 IoT 센서 값이 연결됩니다.</p>`;
+  const q=$('#q');
+  q.oninput=()=>{S.q=q.value;const m=DESTS.find(d=>q.value.includes(d));if(m){S.dest=m;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.d===m))}};
+  document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.dest=c.dataset.d;S.q=S.dest;q.value=S.dest;$('#err').textContent='';document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c))});
+  $('#h').oninput=e=>{S.hours=+e.target.value;$('#ho').textContent=hm(S.hours)};
+  document.querySelectorAll('.sort').forEach(b=>b.onclick=()=>{S.sort=b.dataset.s;document.querySelectorAll('.sort').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  $('#find').onclick=()=>{const m=DESTS.find(d=>S.q.includes(d));if(!m){$('#err').textContent='아직 '+DESTS.join(', ')+' 지역만 검색할 수 있어요.';return}S.dest=m;S.sel=null;go(1)};
+}
+
+function mapSVG(list){
+  const cx=180,cy=105,n=list.length;
+  const pins=list.map((l,i)=>{const a=i*2*Math.PI/n-1.1,r=38+l.dist/900*52,x=cx+Math.cos(a)*r*1.5,y=cy+Math.sin(a)*r,lv=level(l);
+    return `<g class="pin" data-id="${l.id}" tabindex="0" role="button" aria-label="${l.name} 잔여 ${rem(l)}대" style="cursor:pointer">
+    <circle cx="${x}" cy="${y}" r="${S.sel===l.id?17:14}" fill="${lv.c}" stroke="${S.sel===l.id?'#1b1f3b':'#fff'}" stroke-width="3"/>
+    <text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${rem(l)}</text></g>`}).join('');
+  return `<svg viewBox="0 0 360 210" width="100%" role="img" aria-label="${S.dest} 주변 주차장 지도">
+  <rect width="360" height="210" fill="#faf6e8"/><g stroke="#fff" stroke-width="12" fill="none"><path d="M0 70H360M0 150H360M90 0V210M250 0V210M0 30L360 190"/></g>
+  <g stroke="#efe6c4" stroke-width="1" fill="none"><path d="M0 70H360M0 150H360M90 0V210M250 0V210"/></g>
+  <circle cx="${cx}" cy="${cy}" r="8" fill="#1b1f3b"/><circle cx="${cx}" cy="${cy}" r="3" fill="#fff"/>
+  <text x="${cx}" y="${cy+22}" text-anchor="middle" font-size="12" font-weight="700" fill="#1b1f3b" stroke="#faf6e8" stroke-width="3" paint-order="stroke">${S.dest}</text>${pins}</svg>`;
+}
+
+function renderList(){
+  const list=ranked(),m=S.hours*60,top=list.find(l=>rem(l)>0&&pFull(l,10)<.5);
+  const sl={price:'가격 낮은 순',seats:'잔여석 많은 순',dist:'거리 가까운 순'}[S.sort];
+  V.innerHTML=`<h2>${S.dest} 주변 주차장</h2>
+  <p class="sumline">${hm(S.hours)} 주차 기준 · ${sl}</p>
+  <div class="mapw">${mapSVG(list)}</div>
+  <div class="legend"><span style="--c:var(--ok)">여유</span><span style="--c:var(--mid)">보통</span><span style="--c:var(--bad)">혼잡·만차</span></div>
+  ${list.map(l=>{const lv=level(l),p=Math.round(pFull(l,10)*100),r=rem(l);
+   return `<button class="lot ${r<=0?'full':''}" data-id="${l.id}" aria-current="${S.sel===l.id}">
+   <div class="row"><span class="nm">${l.name}</span><span>${l===top?'<span class="badge b-rec">추천</span> ':''}<span class="badge b-${lv.k}">${lv.t}</span></span></div>
+   <div class="meta"><span>잔여 <b>${r}</b>/${l.cap}대</span><span>${l.dist}m</span></div>
+   <div class="row" style="margin-top:6px"><span style="font-size:12.5px;color:var(--sub)">${hm(S.hours)} 예상 요금</span><span class="price">${won(fee(l,m))}</span></div>
+   <div class="bar" style="--c:${lv.c}"><i style="width:${Math.round(l.occ/l.cap*100)}%"></i></div>
+   ${r>0&&p>=50?`<div class="warn">⚠ 10분 안에 만차 확률 ${p}%</div>`:''}</button>`}).join('')}`;
+  document.querySelectorAll('.lot').forEach(b=>b.onclick=()=>{S.sel=+b.dataset.id;go(2)});
+  document.querySelectorAll('.pin').forEach(p=>{const f=()=>{S.sel=+p.dataset.id;renderList();const el=document.querySelector('.lot[aria-current=true]');el&&el.scrollIntoView({block:'nearest',behavior:'smooth'})};p.onclick=f;p.onkeydown=e=>{if(e.key==='Enter')f()}});
+}
+
+function renderDetail(){
+  const l=lots[S.sel];
+  if(!l){V.innerHTML=`<div class="empty">비교 화면에서 주차장을 선택하면<br>혼잡도 예측과 체류시간별 요금을 볼 수 있어요.<br><button class="cta" id="gb">주차장 고르러 가기</button></div>`;$('#gb').onclick=()=>go(S.dest&&S.tab!==1?1:0);return}
+  const lv=level(l),p10=Math.round(pFull(l,10)*100),p30=Math.round(pFull(l,30)*100);
+  const pts=[0,10,20,30,40,50,60].map(t=>Math.min(100,Math.round((l.occ+l.rate*t/10)/l.cap*100)));
+  const W=300,H=110,bw=28,gap=(W-bw*7)/6;
+  const bars=pts.map((v,i)=>{const h=v/100*H,x=i*(bw+gap),c=v>=100?'var(--bad)':v>=90?'var(--bad)':v>=70?'var(--mid)':'var(--ok)';
+    return `<rect x="${x}" y="${H-h}" width="${bw}" height="${h}" rx="4" fill="${c}"/><text x="${x+bw/2}" y="${H-h-4}" text-anchor="middle" font-size="10" font-weight="700" fill="#1b1f3b">${v}%</text><text x="${x+bw/2}" y="${H+14}" text-anchor="middle" font-size="10" fill="#5d6283">${i?'+'+i*10+'분':'지금'}</text>`}).join('');
+  const hrs=[...new Set([1,2,3,6,S.hours])].sort((a,b)=>a-b);
+  V.innerHTML=`<h2>${l.name}</h2>
+  <p class="hint">${S.dest} · ${l.dist}m · 잔여 ${rem(l)}/${l.cap}대 <span class="badge b-${lv.k}">${lv.t}</span></p>
+  <div class="panel"><div class="big" style="color:${p10>=50?'var(--badt)':'var(--ink)'}">${rem(l)<=0?'현재 만차예요':`10분 안에 만차 확률 ${p10}%`}</div>
+   <p class="hint" style="text-align:center;margin-bottom:10px">30분 안에는 ${p30}% · 점유율 예측</p>
+   <svg viewBox="-4 -14 308 142" width="100%" role="img" aria-label="향후 60분 점유율 예측 그래프">${bars}</svg></div>
+  <div class="panel"><b style="font-size:14px">체류시간별 상세 요금</b>
+   <table style="margin-top:8px"><tr><th>체류시간</th><th>예상 요금</th></tr>
+   ${hrs.map(h=>`<tr class="${h===S.hours?'me':''}"><td>${hm(h)}${h===S.hours?' (내 선택)':''}</td><td>${won(fee(l,h*60))}</td></tr>`).join('')}</table>
+   <p class="hint" style="margin:8px 0 0">기본 ${l.bm}분 ${won(l.bf)} + ${l.um}분당 ${won(l.uf)} · 일 최대 ${won(l.max)}</p></div>
+  <div class="panel"><div class="toggle"><span>만차 위험 알림 받기</span><button class="sw" id="sw" role="switch" aria-checked="${S.alert}" aria-label="만차 위험 알림"></button></div></div>
+  <button class="cta" id="nav">네비게이션 안내 시작</button>`;
+  $('#sw').onclick=()=>{S.alert=!S.alert;S.warned={};$('#sw').setAttribute('aria-checked',S.alert);toast(S.alert?'만차 위험이 높아지면 알려드릴게요.':'알림을 껐어요.')};
+  $('#nav').onclick=()=>window.open('https://map.naver.com/p/search/'+encodeURIComponent(S.dest+' '+l.name),'_blank','noopener');
+}
+
+let tt;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),3200)}
+
+// IoT 센서 입출차 데이터를 흉내 내는 시뮬레이션 (평균 점유율로 되돌아가는 무작위 변동)
+function tick(){
+  lots.forEach(l=>{const bias=(l.occ0-l.occ)/l.cap*6;l.occ=Math.max(0,Math.min(l.cap,l.occ+Math.round(bias+Math.random()*5-2.2)))});
+  $('#upd').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' 갱신';
+  if(APP.classList.contains('on')&&S.tab>0&&!document.activeElement.matches('.sw'))render();
+  if(S.alert&&S.sel!=null){const l=lots[S.sel],p=pFull(l,10);if(p>=.6&&!S.warned[l.id]){S.warned[l.id]=1;toast('⚠ '+l.name+' 10분 안에 만차 확률 '+Math.round(p*100)+'%')}if(p<.4)S.warned[l.id]=0}
+}
+[0,1,2].forEach(i=>$('#t'+i).onclick=()=>go(i));
+// 한 파일 안에서 소개 화면과 앱 화면 전환 (#app)
+const APP=document.getElementById('app');
+function sync(){const on=location.hash==='#app';APP.classList.toggle('on',on);document.documentElement.style.overflow=on?'hidden':'';if(on)V.scrollTop=0}
+function closeApp(){history.replaceState(null,'',location.pathname+location.search);sync()}
+window.addEventListener('hashchange',sync);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&APP.classList.contains('on'))closeApp()});
+$('.back').onclick=e=>{e.preventDefault();closeApp()};
+document.querySelectorAll('[data-dest]').forEach(a=>a.onclick=e=>{e.preventDefault();S.dest=a.dataset.dest;S.q=S.dest;S.hours=3;S.sel=null;go(1);location.hash='#app';sync()});
+const P=new URLSearchParams(location.search),pd=P.get('dest'),ph=parseFloat(P.get('hours'));
+if(ph>=.5&&ph<=12)S.hours=ph;
+if(DESTS.includes(pd)){S.dest=pd;S.q=pd;go(1);history.replaceState(null,'','#app')}else render();
+sync();tick();setInterval(tick,4000);
+
+})();
+</script>
+<script>
+// 히어로 폰 화면의 잔여석이 실시간처럼 변하는 연출
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const v={n1:22,n2:69,n3:16};
+  setInterval(()=>{for(const k in v){v[k]=Math.max(3,v[k]+Math.round(Math.random()*3-1.5));document.getElementById(k).textContent=v[k]}},2500);
+})();
+</script>
+</body>
+</html>
